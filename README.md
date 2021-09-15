@@ -18,14 +18,16 @@ Model Performance by Evaluation Metric
 | BERT-Mini   | 43.55%	|  46.45%  |	59.54%    |    42.87%     |
 | BERT-Medium | 54.07%	|  59.51%  |	81.27%    |    53.87%     |
 
-**Pretraining Evaluation: Next Sentence Accuracy by Training Steps / Warm-up Steps
+
+**Pretraining Evaluation: Next Sentence Accuracy by Training Steps / Warm-up Steps**
 | Model       |  20/10  |  100/20  |  10,000/100  |   0/0 (base)  |
 | ------------|:-------:|:--------:|:------------:|:-------------:|
 | BERT-Tiny   | 76.00%	|  80.00%  | 	86.13%    |    52.50%     |
 | BERT-Mini   | 87.13%	|  90.63%  |	99.25%    |    54.63%     |
 | BERT-Medium | 87.63%	|  95.50%  |	100.00%   |    56.88%     |
 
-**Fine-tuning Evaluation: Classification Accuracy by Training Steps / Warm-up Steps
+
+**Fine-tuning Evaluation: Classification Accuracy by Training Steps / Warm-up Steps**
 | Model       |  20/10  |  100/20  |  10,000/100  |   0/0 (base)  |
 | ------------|:-------:|:--------:|:------------:|:-------------:|
 | BERT-Tiny   | 54.53%	|  52.16%  | 	52.89%    |    51.25%     |
