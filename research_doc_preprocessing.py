@@ -10,6 +10,10 @@ from bs4 import BeautifulSoup
 import re
 import os
 from random import randint
+from selenium.common.exceptions import NoSuchElementException
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
 import sys
 try:
     from project_utilities import launch_webdriver, \
@@ -110,6 +114,7 @@ def download_docs(driver, link_list, page_name_list,
     None.
 
     """
+    xpath_lib = get_xpath_lib()
     if download_type == 'source':
         for link_index in range(len(link_list)):
             link = get_full_doc_view_link(link_list[link_index])
@@ -135,30 +140,38 @@ def download_docs(driver, link_list, page_name_list,
         for link_index in range(len(link_list)):
             link = get_full_doc_view_link(link_list[link_index])
             driver.get(link)
-            rand = randint(3, 30)
+            rand = randint(3, 15)
             print(f'Page loaded, starting warmup wait {rand} seconds.')
             time.sleep(rand)
+            wait = WebDriverWait(driver, 10)
             try:
-                full_document_button = (driver.
-                                        find_element_by_xpath(
-                                            xpath_lib['full_document_button']
-                                            ))
+                full_doc_condition = (EC.
+                                      element_to_be_clickable(
+                                          (By.XPATH,
+                                           xpath_lib['full_document_button'])))
+                full_document_button = wait.until(full_doc_condition)
                 full_document_button.click()
                 time.sleep(randint(0, 2))
-                page_download_button = (driver.
-                                        find_element_by_xpath(
-                                            xpath_lib[
-                                                'download_attachments_button']
-                                            ))
-                page_download_button.click()
-            except Exception:
+            except NoSuchElementException as error:
+                print(error)
                 pass
             try:
-                select_downloads_btn_list = (driver.
-                                             find_elements_by_xpath(
-                                                 xpath_lib[
-                                                     'select_downloads_button']
-                                                 ))
+                down_attach_condition = (EC.
+                                         element_to_be_clickable(
+                                             (By.XPATH,
+                                              xpath_lib['download_attachments_button'])))
+                page_download_button = wait.until(down_attach_condition)
+                page_download_button.click()
+            except NoSuchElementException as error:
+                print(error)
+                pass
+                # time.sleep(randint(0, 1))
+            try:
+                select_down_condition = (EC.
+                                         presence_of_all_elements_located(
+                                             (By.XPATH,
+                                              xpath_lib['select_downloads_button'])))
+                select_downloads_btn_list = wait.until(select_down_condition)
                 downloads_count = len(select_downloads_btn_list)
                 if downloads_count > 4:
                     print(f'Many downloads for {page_name_list[link_index]}, '
@@ -172,7 +185,7 @@ def download_docs(driver, link_list, page_name_list,
                               f" of {len(link_list)} - " +
                               f"{page_name_list[link_index]}, attachment " +
                               f"{button_count+1} of {downloads_count}.")
-                    rand = randint(15, 60)
+                    rand = randint(12, 20)
                     print(f'Done downloading, starting cooldown '
                           f'wait {rand} seconds.')
                     time.sleep(rand)
