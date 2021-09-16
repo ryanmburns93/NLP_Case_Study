@@ -211,5 +211,5 @@ def main():
         extract_text_from_pdf_files(pdf_file_list, save_dir)
 
 
-if __name__ == "__main__":
-    main()
+#if __name__ == "__main__":
+#    main()
