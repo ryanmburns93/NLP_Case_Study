@@ -16,15 +16,17 @@ try:
         gather_file_names, replace_illegal_chars, \
         extract_text_from_pdf_files
     from proprietary_loader import load_request_data, \
-        get_topic_search_url, get_xpath_lib
+        get_topic_search_url, get_xpath_lib, \
+        get_target_topic_list
     from research_doc_preprocessing import download_docs
-except ModuleNotFoundError:
+except ModuleNotFoundError or ImportError:
     sys.path.append(os.getcwd())
     from project_utilities import scroll, launch_webdriver, \
         gather_file_names, replace_illegal_chars, \
         extract_text_from_pdf_files
     from proprietary_loader import load_request_data, \
-        get_topic_search_url, get_xpath_lib
+        get_topic_search_url, get_xpath_lib, \
+        get_target_topic_list
     from research_doc_preprocessing import download_docs
 
 
@@ -164,7 +166,7 @@ def retrieve_foundational_doc_links(save_dir):
     i = 0
     file_count = len(filename_list)
     for file in filename_list:
-        link_list, name_list = collect_foundational_links(file)
+        link_list, name_list = collect_foundational_links(file, save_dir)
         for index_val in range(len(link_list)):
             temp = pd.DataFrame({'topic_name': file[:-4],
                                  'link': link_list[index_val],
@@ -201,7 +203,11 @@ def main():
     save_type = prompt_for_save_type()
     collect_topic_search_results()
     foundational_link_df = retrieve_foundational_doc_links()
-    download_foundational_files(driver, foundational_link_df,
+    target_topic_list = get_target_topic_list(level=1)
+    filtered_link_df = foundational_link_df[foundational_link_df.
+                                            topic_name.
+                                            isin(target_topic_list)]
+    download_foundational_files(driver, filtered_link_df,
                                 save_type, save_dir)
     if save_type == 'pdf':
         pdf_file_list = gather_file_names(save_dir, 'pdf')
