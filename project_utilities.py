@@ -216,6 +216,7 @@ def go_to_downloads():
             os.chdir(new_wd)
             return new_wd
     get_download_folder()
+    return
 
 
 def gather_file_names(file_loc, file_type):
@@ -303,3 +304,5 @@ def extract_text_from_pdf_files(file_location_list, save_dir):
               f'{len(file_location_list)} - ' +
               f'({round((file_loc_index+1)/len(file_location_list), 2)}%)')
     return
+
+
