@@ -120,7 +120,6 @@ def scroll(driver, timeout):
             # If heights are the same it will exit the function
             break
         last_height = new_height
-    return
 
 
 def launch_webdriver(webdriver_path=None):
@@ -215,7 +214,6 @@ def go_to_downloads():
             os.chdir(new_wd)
             return new_wd
     get_download_folder()
-    return None
 
 
 def gather_file_names(file_loc, file_type):
@@ -301,4 +299,3 @@ def extract_text_from_pdf_files(file_location_list, save_dir):
         print(f'Completed parsing pdf file {index+1} of ' +
               f'{len(file_location_list)} - ' +
               f'({round((index+1)/len(file_location_list), 2)}%)')
-    return None

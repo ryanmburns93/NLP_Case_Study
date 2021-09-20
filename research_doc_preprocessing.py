@@ -147,7 +147,7 @@ def download_docs(driver, link_list, page_name_list,
             print(f"Completed scraping document {index+1}" +
                   f" of {len(link_list)} - {page_name_list[index]}")
         return None
-    elif download_type == 'pdf':
+    if download_type == 'pdf':
         for index, link in enumerate(link_list):
             link = get_full_doc_view_link(link)
             driver.get(link)
@@ -206,7 +206,6 @@ def download_docs(driver, link_list, page_name_list,
         return None
     raise ValueError("download_type should be 'pdf' or 'source',"
                      "please try again.")
-    return None
 
 
 def prompt_for_save_type():
@@ -229,7 +228,6 @@ def login(driver):
     login_button = driver.find_element(By.XPATH,
                                        xpath_lib.get('form_login_button'))
     login_button.click()
-    return None
 
 
 def main():
