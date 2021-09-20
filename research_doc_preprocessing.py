@@ -19,13 +19,13 @@ try:
     from project_utilities import launch_webdriver, \
         gather_file_names, replace_illegal_chars, \
         extract_text_from_pdf_files
-    from proprietary_loader import get_xpath_lib
+    from proprietary_loader import get_xpath_lib, get_login_info
 except ModuleNotFoundError:
     sys.path.append(os.getcwd())
     from project_utilities import launch_webdriver, \
         gather_file_names, replace_illegal_chars, \
         extract_text_from_pdf_files
-    from proprietary_loader import get_xpath_lib
+    from proprietary_loader import get_xpath_lib, get_login_info
 
 
 xpath_lib = get_xpath_lib()
@@ -116,29 +116,40 @@ def download_docs(driver, link_list, page_name_list,
     """
     xpath_lib = get_xpath_lib()
     if download_type == 'source':
-        for link_index in range(len(link_list)):
-            link = get_full_doc_view_link(link_list[link_index])
+        for index, link in enumerate(link_list):
+            link = get_full_doc_view_link(link)
             driver.get(link)
-            rand = randint(3, 30)
-            print(f'Starting wait {rand} seconds.')
+            rand = randint(3, 10)
+            print(f'Page loaded, starting warmup wait {rand} seconds.')
             time.sleep(rand)
+            wait = WebDriverWait(driver, 10)
+            try:
+                full_doc_condition = (EC.
+                                      element_to_be_clickable(
+                                          (By.XPATH,
+                                           xpath_lib['full_document_button'])))
+                full_document_button = wait.until(full_doc_condition)
+                full_document_button.click()
+                time.sleep(randint(0, 2))
+            except Exception as error:
+                print(error)
             temp_page_source = driver.page_source
-            temp_soup = BeautifulSoup(temp_page_source)
-            filename = page_name_list[link_index]
+            temp_soup = BeautifulSoup(temp_page_source, features='lxml')
+            filename = page_name_list[index]
             filename = replace_illegal_chars(filename)
             with open(os.path.join(save_dir, (filename + '.txt')),
                       "wb+") as file:
                 file.write(temp_soup.encode('utf-8'))
             assert file.closed
-            rand = randint(15, 60)
+            rand = randint(15, 30)
             print(f'Starting wait {rand} second wait.')
             time.sleep(rand)
-            print(f"Completed scraping document {link_index+1}" +
-                  f" of {len(link_list)} - {page_name_list[link_index]}")
-        return
+            print(f"Completed scraping document {index+1}" +
+                  f" of {len(link_list)} - {page_name_list[index]}")
+        return None
     elif download_type == 'pdf':
-        for link_index in range(len(link_list)):
-            link = get_full_doc_view_link(link_list[link_index])
+        for index, link in enumerate(link_list):
+            link = get_full_doc_view_link(link)
             driver.get(link)
             rand = randint(3, 15)
             print(f'Page loaded, starting warmup wait {rand} seconds.')
@@ -152,51 +163,50 @@ def download_docs(driver, link_list, page_name_list,
                 full_document_button = wait.until(full_doc_condition)
                 full_document_button.click()
                 time.sleep(randint(0, 2))
-            except NoSuchElementException as error:
+            except Exception as error:
                 print(error)
-                pass
             try:
                 down_attach_condition = (EC.
                                          element_to_be_clickable(
                                              (By.XPATH,
-                                              xpath_lib['download_attachments_button'])))
+                                              xpath_lib[
+                                                  'download_attachments'
+                                                  '_button'])))
                 page_download_button = wait.until(down_attach_condition)
                 page_download_button.click()
             except NoSuchElementException as error:
                 print(error)
-                pass
-                # time.sleep(randint(0, 1))
             try:
                 select_down_condition = (EC.
                                          presence_of_all_elements_located(
                                              (By.XPATH,
-                                              xpath_lib['select_downloads_button'])))
+                                              xpath_lib['select_downloads'
+                                                        '_button'])))
                 select_downloads_btn_list = wait.until(select_down_condition)
                 downloads_count = len(select_downloads_btn_list)
                 if downloads_count > 4:
-                    print(f'Many downloads for {page_name_list[link_index]}, '
-                          f'index {link_index}. Skipping download for now.')
+                    print(f'Many downloads for {page_name_list[index]}, '
+                          f'index {index}. Skipping download for now.')
                 else:
                     for button_count in range(downloads_count):
                         button = select_downloads_btn_list[button_count]
                         button.click()
                         time.sleep(randint(0, 7))
-                        print(f"Completed scraping document {link_index+1}" +
+                        print(f"Completed scraping document {index+1}" +
                               f" of {len(link_list)} - " +
-                              f"{page_name_list[link_index]}, attachment " +
+                              f"{page_name_list[index]}, attachment " +
                               f"{button_count+1} of {downloads_count}.")
                     rand = randint(12, 20)
                     print(f'Done downloading, starting cooldown '
                           f'wait {rand} seconds.')
                     time.sleep(rand)
             except Exception:
-                print(f'Unable to download {page_name_list[link_index]}. '
+                print(f'Unable to download {page_name_list[index]}. '
                       'Passing.')
-        return
-    else:
-        raise ValueError("download_type should be 'pdf' or 'source',"
-                         "please try again.")
-        return
+        return None
+    raise ValueError("download_type should be 'pdf' or 'source',"
+                     "please try again.")
+    return None
 
 
 def prompt_for_save_type():
@@ -206,6 +216,20 @@ def prompt_for_save_type():
         save_type = input("Please enter 'source' or 'pdf' to " +
                           "indicate whether: ")
     return save_type
+
+
+def login(driver):
+    xpath_lib = get_xpath_lib()
+    username_field = driver.find_element(By.XPATH,
+                                         xpath_lib.get('form_username'))
+    username_field.send_keys(get_login_info('username'))
+    password_field = driver.find_element(By.XPATH,
+                                         xpath_lib.get('form_password'))
+    password_field.send_keys(get_login_info('password'))
+    login_button = driver.find_element(By.XPATH,
+                                       xpath_lib.get('form_login_button'))
+    login_button.click()
+    return None
 
 
 def main():

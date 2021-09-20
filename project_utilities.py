@@ -7,7 +7,6 @@ Created on Tue Sep 14 13:12:03 2021
 
 from pprint import pprint
 import os
-# from tokenization import FullTokenizer
 import time
 import sys
 import ctypes
@@ -77,7 +76,7 @@ def add_document_line_breaks(sentence_list):
             if input_val == 'y':
                 sentence_list = sentence_list.append('') + sentence_list[i+1:]
             sentence_count = len(sentence_list)
-    return(sentence_list)
+    return sentence_list
 
 
 def scroll(driver, timeout):
@@ -216,7 +215,7 @@ def go_to_downloads():
             os.chdir(new_wd)
             return new_wd
     get_download_folder()
-    return
+    return None
 
 
 def gather_file_names(file_loc, file_type):
@@ -282,27 +281,24 @@ def extract_text_from_pdf_files(file_location_list, save_dir):
     # after this is called in cmd, run in python:
     # tika.TikaClientOnly = True
     go_to_downloads()
-    wd = os.getcwd()
     try:
         subprocess.run(["java",
                         "-jar",
-                        os.path.join(wd, 'tika-server-standard-2.1.0.jar')],
+                        os.path.join(os.getcwd(),
+                                     'tika-server-standard-2.1.0.jar')],
                        timeout=5,
                        check=True)
     except TimeoutExpired:
         pass
     finally:
         tika.TikaClientOnly = True
-    for file_loc_index in range(len(file_location_list)):
-        file_loc = file_location_list[file_loc_index]
+    for index, file_loc in enumerate(file_location_list):
         assert file_loc[-4:] == '.pdf'
         parsed = parser.from_file(file_loc, 'http://localhost:9998/')
         with open(os.path.join(save_dir, f'{file_loc[:-4]}.txt'),
                   'w', encoding='utf-8') as txt_file:
             txt_file.write(parsed['content'])
-        print(f'Completed parsing pdf file {file_loc_index+1} of ' +
+        print(f'Completed parsing pdf file {index+1} of ' +
               f'{len(file_location_list)} - ' +
-              f'({round((file_loc_index+1)/len(file_location_list), 2)}%)')
-    return
-
-
+              f'({round((index+1)/len(file_location_list), 2)}%)')
+    return None
