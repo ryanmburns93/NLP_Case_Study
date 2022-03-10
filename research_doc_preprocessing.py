@@ -163,8 +163,8 @@ def download_docs(driver, link_list, page_name_list,
                 full_document_button = wait.until(full_doc_condition)
                 full_document_button.click()
                 time.sleep(randint(0, 2))
-            except Exception as error:
-                print(error)
+            except NoSuchElementException:
+                print(f'Unable to find Full Document button. Continuing.')
             try:
                 down_attach_condition = (EC.
                                          element_to_be_clickable(
@@ -174,8 +174,8 @@ def download_docs(driver, link_list, page_name_list,
                                                   '_button'])))
                 page_download_button = wait.until(down_attach_condition)
                 page_download_button.click()
-            except NoSuchElementException as error:
-                print(error)
+            except NoSuchElementException:
+                print(f'Unable to find page download button for {page_name_list[index]}.')
             try:
                 select_down_condition = (EC.
                                          presence_of_all_elements_located(

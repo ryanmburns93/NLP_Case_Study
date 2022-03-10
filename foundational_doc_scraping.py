@@ -18,7 +18,7 @@ try:
     from proprietary_loader import load_request_data, \
         get_topic_search_url, get_xpath_lib, \
         get_target_topic_list
-    from research_doc_preprocessing import download_docs
+    from research_doc_preprocessing import download_docs, login
 except ModuleNotFoundError or ImportError:
     sys.path.append(os.getcwd())
     from project_utilities import scroll, launch_webdriver, \
@@ -27,7 +27,7 @@ except ModuleNotFoundError or ImportError:
     from proprietary_loader import load_request_data, \
         get_topic_search_url, get_xpath_lib, \
         get_target_topic_list
-    from research_doc_preprocessing import download_docs
+    from research_doc_preprocessing import download_docs, login
 
 
 xpath_lib = get_xpath_lib()
@@ -203,10 +203,13 @@ def main():
     save_type = prompt_for_save_type()
     collect_topic_search_results()
     foundational_link_df = retrieve_foundational_doc_links()
-    target_topic_list = get_target_topic_list(level=1)
+    target_topic_list = get_target_topic_list(level=str(3))
     filtered_link_df = foundational_link_df[foundational_link_df.
                                             topic_name.
                                             isin(target_topic_list)]
+    filtered_link_df.reset_index(drop=True, inplace=True)
+    driver.get('https://www.gartner.com/document/3892436')
+    login(driver)
     download_foundational_files(driver, filtered_link_df,
                                 save_type, save_dir)
     if save_type == 'pdf':
