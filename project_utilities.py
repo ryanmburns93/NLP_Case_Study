@@ -19,6 +19,7 @@ import subprocess
 from subprocess import TimeoutExpired
 import tika
 from tika import parser
+from tqdm import tqdm
 
 
 def manual_validation(sentence_list, max_character_length=500, num_cycles=3):
@@ -217,7 +218,22 @@ def go_to_downloads():
 
 
 def gather_file_names(file_loc, file_type):
-    """Gather list of file names of single type."""
+    """
+    Gather list of file names of a single type.
+
+    Parameters
+    ----------
+    file_loc : str
+        String representation of the file directory containing the files being listed.
+    file_type : str
+        String of the file type at the end of the file (i.e. "csv" or "pdf").
+
+    Returns
+    -------
+    filename_list : list
+        List of files of the specified type contained in the specified file directory.
+
+    """
     dir_temp = os.getcwd()
     os.chdir(file_loc)
     filename_list = glob("*."+file_type)
@@ -279,11 +295,11 @@ def extract_text_from_pdf_files(file_path, save_dir):
     # after this is called in cmd, run in python:
     # tika.TikaClientOnly = True
     go_to_downloads()
+    tika_path = os.path.join(os.getcwd(), 'tika-server-standard-2.1.0.jar')
     try:
         subprocess.run(["java",
                         "-jar",
-                        os.path.join(os.getcwd(),
-                                     'tika-server-standard-2.1.0.jar')],
+                        tika_path],
                        timeout=5,
                        check=True)
     except TimeoutExpired:
@@ -297,110 +313,98 @@ def extract_text_from_pdf_files(file_path, save_dir):
     parsed = parser.from_file(file_path, 'http://localhost:9998/')
     with open(f'{file_path[:-4]}.txt', 'w', encoding='utf-8') as txt_file:
             txt_file.write(parsed['content'])
-        #print(f'Completed parsing pdf file {index+1} of ' +
-        #      f'{len(file_location_list)} - ' +
-        #      f'({round((index+1)/len(file_location_list), 2)*100}%)')
     return
 
 
+def clean_single_txt_file(temp_txt_lines):
+    """
+    Parse, clean, and save a single .txt file matching the research document format.
+
+    Parameters
+    ----------
+    temp_txt_lines : list
+        A list of strings representing all text pulled from the target page source or pdf document.
+
+    Returns
+    -------
+    temp_txt_lines : list
+        A list of strings filtered to only include text lines of interest from the
+        webpage source or pdf document.
+
+    """
+    temp_txt_lines = [line for line in temp_txt_lines if line != '\n']
+    temp_txt_lines = [line for line in temp_txt_lines if line[0:13] != 'Gartner, Inc.']
+    temp_txt_lines = [line.strip() for line in temp_txt_lines]
+    temp_txt_lines = [line for line in temp_txt_lines if not ((line[0:4]=='http') & (' ' not in line))]
+    temp_txt_lines2 = temp_txt_lines.copy()
+    for line_index, line in enumerate(temp_txt_lines):
+        if line[0].islower():
+            temp_txt_lines2[line_index] = temp_txt_lines2[line_index-1] + ' ' + line
+            temp_txt_lines2[line_index-1] = ''
+        elif line.strip()=='■':
+            temp_txt_lines2[line_index+1] = line + ' ' + temp_txt_lines2[line_index+1]
+            temp_txt_lines2[line_index] = ''
+    temp_txt_lines = temp_txt_lines2.copy()
+    title_consolidated_indicator = 0
+    index_counter = 1
+    while title_consolidated_indicator < 1:
+        if temp_txt_lines[index_counter][:9] != 'Published':
+            temp_txt_lines[index_counter] = temp_txt_lines[index_counter-1] + ' ' + temp_txt_lines[index_counter]
+            temp_txt_lines[index_counter-1] = ''
+            index_counter += 1
+        else:
+            title_consolidated_indicator = 1
+    temp_txt_lines = [line for line in temp_txt_lines if line != '']
+    return temp_txt_lines
 
 
 def rename_parsed_txts(save_dir):
+    """
+    Rename .txt files once they have been parsed and cleaned.
+
+    Parameters
+    ----------
+    save_dir : str
+        String path to the folder directory in which the parsed .txt files should be saved.
+
+    Returns
+    -------
+    None.
+
+    """
     txt_file_list = gather_file_names(save_dir, 'txt')
-    pdf_file_list = gather_file_names(save_dir, 'pdf')
     for index, file_path in enumerate(txt_file_list):
         with open(os.path.join(save_dir, file_path),
                   'r', encoding='utf-8') as txt_file:
             temp_txt_lines = txt_file.readlines()
-        temp_txt_lines = [line for line in temp_txt_lines if line != '\n']
-        temp_txt_lines = [line for line in temp_txt_lines if line[0:13] != 'Gartner, Inc.']
-        temp_txt_lines = [line.strip() for line in temp_txt_lines]
-        temp_txt_lines = [line for line in temp_txt_lines if not ((line[0:4]=='http') & (' ' not in line))]
-        temp_txt_lines2 = temp_txt_lines.copy()
-        for line_index, line in enumerate(temp_txt_lines):
-            if line[0].islower():
-                temp_txt_lines2[line_index] = temp_txt_lines2[line_index-1] + ' ' + line
-                temp_txt_lines2[line_index-1] = ''
-            elif line.strip()=='■':
-                temp_txt_lines2[line_index+1] = line + ' ' + temp_txt_lines2[line_index+1]
-                temp_txt_lines2[line_index] = ''
-        temp_txt_lines = temp_txt_lines2.copy()
-        title_consolidated_indicator = 0
-        index_counter = 1
-        while title_consolidated_indicator < 1:
-            if temp_txt_lines[index_counter][:9] != 'Published':
-                temp_txt_lines[index_counter] = temp_txt_lines[index_counter-1] + ' ' + temp_txt_lines[index_counter]
-                temp_txt_lines[index_counter-1] = ''
-                index_counter += 1
-            else:
-                title_consolidated_indicator = 1
-        temp_txt_lines = [line for line in temp_txt_lines if line != '']
+        temp_txt_lines = clean_single_txt_file(temp_txt_lines)
         new_filename = temp_txt_lines[0].replace(' ', '_')
         new_filename = new_filename.replace('/', '')
         os.rename(os.path.join(save_dir, file_path), os.path.join(save_dir, (new_filename + '.txt')))
-        os.rename(os.path.join(save_dir, pdf_file_list[index]), os.path.join(save_dir, (new_filename + '.pdf')))
         print(f'Renamed file {index} of {len(txt_file_list)}. Completed {round(index/len(txt_file_list), 4)*100}%')
-    return True
+    return
 
 
-def rename_parsed_pdfs(save_dir):
+def parse_pdfs(save_dir):
+    """
+    Parse pdf files using the Tika Server parsing engine and save the content of the pdf to a .txt file.
+
+    Parameters
+    ----------
+    save_dir : str
+        String path to the folder directory in which the parsed .txt files should be saved.
+
+    Returns
+    -------
+    None.
+
+    """
     pdf_file_list = gather_file_names(save_dir, 'pdf')
-    for index, file_path in enumerate(pdf_file_list):
-        with open(os.path.join(save_dir, file_path),
-                  'r', encoding='utf-8') as pdf_file:
-            temp_txt_lines = txt_file.readlines()
-
-for index, file_path in tqdm(enumerate(pdf_file_list), leave=True):
-    parsed = parser.from_file(os.path.join('C:/Users/Ryan/OneDrive - Northwestern University/Personal/Gartner MQ/', file_path), 'http://localhost:9998/')
-    try:
-        with open(os.path.join('C:/Users/Ryan/OneDrive - Northwestern University/Personal/Gartner MQ/Parsed_Text_Files/', f'{file_path[:-4]}.txt'), 'w', encoding='utf-8') as txt_file:
-            txt_file.write(parsed['content'])
-    except TypeError:
-        print(f'Unable to parse {file_path}.')
-
-txt_file_list = gather_file_names('C:/Users/Ryan/OneDrive - Northwestern University/Personal/Gartner MQ/Parsed_Text_Files/', 'txt')
-for index, file_path in tqdm(enumerate(txt_file_list[1:]), leave=True):
-    try:
-        with open(os.path.join('C:/Users/Ryan/OneDrive - Northwestern University/Personal/Gartner MQ/Parsed_Text_Files/', file_path),
-                  'r', encoding='utf-8') as txt_file:
-            temp_txt_lines = txt_file.readlines()
-        if len(temp_txt_lines) == 0:
-            continue
-        temp_txt_lines = [line for line in temp_txt_lines if line != '\n']
-        temp_txt_lines = [line for line in temp_txt_lines if line[0:13] != 'Gartner, Inc.']
-        temp_txt_lines = [line.strip() for line in temp_txt_lines]
-        temp_txt_lines = [line for line in temp_txt_lines if not ((line[0:4]=='http') & (' ' not in line))]
-        temp_txt_lines = [line for line in temp_txt_lines if line != '']
-        temp_txt_lines2 = temp_txt_lines.copy()
+    for index, file_path in tqdm(enumerate(pdf_file_list), leave=True):
+        parsed = parser.from_file(os.path.join('C:/Users/Ryan/OneDrive - Northwestern University/Personal/Gartner MQ/', file_path), 'http://localhost:9998/')
         try:
-            for line_index, line in enumerate(temp_txt_lines):
-                if line[0].islower():
-                    temp_txt_lines2[line_index] = temp_txt_lines2[line_index-1] + ' ' + line
-                    temp_txt_lines2[line_index-1] = ''
-                elif line.strip()=='■':
-                    temp_txt_lines2[line_index+1] = line + ' ' + temp_txt_lines2[line_index+1]
-                    temp_txt_lines2[line_index] = ''
-        except IndexError:
-            continue
-        temp_txt_lines = temp_txt_lines2.copy()
-        temp_txt_lines = [line for line in temp_txt_lines if line != '']
-        # title_consolidated_indicator = 0
-        # index_counter = 1
-        # while title_consolidated_indicator < 1:
-        #     try:
-        #         if temp_txt_lines[index_counter][:9] != 'Published':
-        #             temp_txt_lines[index_counter] = temp_txt_lines[index_counter-1] + ' ' + temp_txt_lines[index_counter]
-        #             temp_txt_lines[index_counter-1] = ''
-        #             index_counter += 1
-        #         else:
-        #             title_consolidated_indicator = 1
-        #     except IndexError:
-        #         pass
-        new_filename = temp_txt_lines[0].replace(' ', '_')
-        new_filename = new_filename.replace('/', '')
-        os.rename(os.path.join('C:/Users/Ryan/OneDrive - Northwestern University/Personal/Gartner MQ/', file_path[:-4] + '.pdf'), os.path.join('C:/Users/Ryan/OneDrive - Northwestern University/Personal/Gartner MQ/', (new_filename + '.pdf')))
-        os.rename(os.path.join('C:/Users/Ryan/OneDrive - Northwestern University/Personal/Gartner MQ/Parsed_Text_Files/', file_path), os.path.join('C:/Users/Ryan/OneDrive - Northwestern University/Personal/Gartner MQ/Parsed_Text_Files/', (new_filename + '.txt')))
-    except (FileExistsError, FileNotFoundError, OSError, IndexError):
-        continue
-    # os.rename(os.path.join(save_dir, pdf_file_list[index]), os.path.join(save_dir, (new_filename + '.pdf')))
-
+            with open(os.path.join('C:/Users/Ryan/OneDrive - Northwestern University/Personal/Gartner MQ/Parsed_Text_Files/', f'{file_path[:-4]}.txt'), 'w', encoding='utf-8') as txt_file:
+                txt_file.write(parsed['content'])
+        except TypeError:
+            print(f'Unable to parse {file_path}.')
+    return
