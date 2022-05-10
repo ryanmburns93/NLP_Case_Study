@@ -293,19 +293,25 @@ def extract_text_from_pdf_files(file_path, save_dir):
     # java -jar <full path to downloaded tika-server-standard-2.1.0.jar file>
     # this sets server output address which is used in parser call below
     # after this is called in cmd, run in python:
+
+    # below code was not working to activate tika-server-standard-2.1.0.jar, so need to
+    # run "java -jar <full_path_to_tika-server.jar file, i.e. C:/Users/Ryan/Downloads/tika-server-standard-2.1.0.jar>
+
     # tika.TikaClientOnly = True
-    go_to_downloads()
-    tika_path = os.path.join(os.getcwd(), 'tika-server-standard-2.1.0.jar')
-    try:
-        subprocess.run(["java",
-                        "-jar",
-                        tika_path],
-                       timeout=5,
-                       check=True)
-    except TimeoutExpired:
-        pass
-    finally:
-        tika.TikaClientOnly = True
+    # go_to_downloads()
+    # tika_path = os.path.join(os.getcwd(), 'tika-server-standard-2.1.0.jar')
+
+    # try:
+    #     subprocess.run(["java",
+    #                     "-jar",
+    #                     tika_path],
+    #                    timeout=None,
+    #                    check=True)
+    # except TimeoutExpired:
+    #     print('TimeoutExpired error raised. Continuing without further action.')
+    #     pass
+    # finally:
+    tika.TikaClientOnly = True
     # for index, file_loc in enumerate(file_location_list):
     if '/' not in file_path:
         file_path = os.path.join(save_dir, file_path)

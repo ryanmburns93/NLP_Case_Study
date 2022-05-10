@@ -16,14 +16,14 @@ def create_examples(text_list, label_list, set_type):
     """Creates examples for the training and dev sets."""
     assert(len(text_list) == len(label_list))
     examples = []
-    for i in range(len(text_list)):
-        guid = "%s-%s" % (set_type, i)
-        text_a = convert_to_unicode(text_list[i])
+    for index, text in enumerate(text_list):
+        guid = "%s-%s" % (set_type, index)
+        text_a = convert_to_unicode(text)
         text_b = None
         if set_type == "test":
             label = "0"
         else:
-            label = convert_to_unicode(label_list[i])
+            label = convert_to_unicode(label_list[index])
         examples.append(InputExample(guid=guid,
                                      text_a=text_a,
                                      text_b=text_b,

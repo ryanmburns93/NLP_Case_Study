@@ -19,7 +19,7 @@ try:
         get_topic_search_url, get_xpath_lib, \
         get_target_topic_list
     from research_doc_preprocessing import download_docs, login
-except ModuleNotFoundError or ImportError:
+except (ModuleNotFoundError, ImportError):
     sys.path.append(os.getcwd())
     from project_utilities import scroll, launch_webdriver, \
         gather_file_names, replace_illegal_chars, \
@@ -167,10 +167,10 @@ def retrieve_foundational_doc_links(save_dir):
     file_count = len(filename_list)
     for file in filename_list:
         link_list, name_list = collect_foundational_links(file, save_dir)
-        for index_val in range(len(link_list)):
+        for index, link in enumerate(link_list):
             temp = pd.DataFrame({'topic_name': file[:-4],
-                                 'link': link_list[index_val],
-                                 'doc_name': name_list[index_val]}, index=[0])
+                                 'link': link,
+                                 'doc_name': name_list[index]}, index=[0])
             foundational_link_df = pd.concat([foundational_link_df, temp],
                                              ignore_index=True)
         i += 1
