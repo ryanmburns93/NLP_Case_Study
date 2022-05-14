@@ -11,6 +11,8 @@ import time
 from bs4 import BeautifulSoup
 import os
 import sys
+import dotenv
+import pwinput
 try:
     from project_utilities import scroll, launch_webdriver, \
         gather_file_names, replace_illegal_chars, \
@@ -84,6 +86,8 @@ def collect_topic_search_results(driver, save_dir):
     ----------
     driver : webdriver Object
         Initialized webdriver for retrieving and manipulating web pages.
+    save_dir : str
+        String path to the directory in which output should be saved.
 
     Returns
     -------
@@ -123,6 +127,8 @@ def collect_foundational_links(search_results_filename, save_dir):
     search_results_filename : string
         Name of the .txt file containing the saved topic search results
         page source.
+    save_dir : str
+        String path to the directory in which output should be saved.
 
     Returns
     -------
@@ -152,6 +158,11 @@ def retrieve_foundational_doc_links(save_dir):
     """
     Construct dataframe with all topics, foundational docs, and url links.
 
+    Parameters
+    ----------
+    save_dir : str
+        String path to the directory in which output should be saved.
+
     Returns
     -------
     foundational_link_df : pandas dataframe
@@ -180,7 +191,25 @@ def retrieve_foundational_doc_links(save_dir):
 
 def download_foundational_files(driver, foundational_link_df,
                                 save_type, save_dir):
-    """Download each foundational document file."""
+    """
+    Download each foundational document file.
+
+    Parameters
+    ----------
+    driver : webdriver Object
+        Initialized webdriver for retrieving and manipulating web pages.
+    foundational_link_df : Pandas DataFrame
+        Dataframe containing the direct links to the foundational documents.
+    save_type : str
+        String indicator for the file type of the document which should be saved.
+    save_dir : str
+        String path to the directory in which output should be saved.
+
+    Returns
+    -------
+    None.
+
+    """
     link_list = list(foundational_link_df.link)
     page_name_list = list(foundational_link_df.doc_name)
     download_docs(driver, link_list, page_name_list, save_type, save_dir)
@@ -188,7 +217,17 @@ def download_foundational_files(driver, foundational_link_df,
 
 
 def prompt_for_save_type():
-    """Prompt user to input doc type."""
+    """
+    Prompt user to input doc type.
+
+    Returns
+    -------
+    save_type : str
+        The type of file which will be targeted for download. Options
+        are "source" for the document webpage source or "pdf" for the
+        pdf version of the document.
+
+    """
     save_type = None
     while save_type != 'pdf' and save_type != 'source':
         save_type = input("Please enter 'source' or 'pdf' to " +
@@ -196,10 +235,23 @@ def prompt_for_save_type():
     return save_type
 
 
-def main():
+def main(env_file_path=None):
+    """
+    Collect the direct links to research documents on a topic and then
+    directly download those documents using a Chrome webdriver.
+
+    Parameters
+    ----------
+    env_file_path : str, optional
+        String file path to .env file. The default value is None.
+
+    Returns
+    -------
+    None.
+    
+    """
     driver = launch_webdriver()
-    save_dir = input('Please enter the directory where you would'
-                     ' like to save your files: ')
+    save_dir = input('Please enter the directory where you would like to save your files: ')
     save_type = prompt_for_save_type()
     collect_topic_search_results()
     foundational_link_df = retrieve_foundational_doc_links()
@@ -208,10 +260,18 @@ def main():
                                             topic_name.
                                             isin(target_topic_list)]
     filtered_link_df.reset_index(drop=True, inplace=True)
-    driver.get('https://www.gartner.com/document/3892436')
+    if env_file_path==None:
+        env_file_path = dotenv.find_dotenv()
+    dotenv.load_dotenv(env_file_path)
+    if os.environ['RESEARCH_DOCS_URL']=='':
+        target_url = pwinput.pwinput(prompt='Enter the base URL to the research document portal: ',
+                                     mask='*')
+        entrata_username_val = input('Enter your Entrata username: ')
+        dotenv.set_key(env_file_path, 'RESEARCH_DOCS_URL', target_url)
+    dotenv.load_dotenv(env_file_path, override=True)
+    driver.get(['RESEARCH_DOCS_URL'])
     login(driver)
-    download_foundational_files(driver, filtered_link_df,
-                                save_type, save_dir)
+    download_foundational_files(driver, filtered_link_df, save_type, save_dir)
     if save_type == 'pdf':
         pdf_file_list = gather_file_names(save_dir, 'pdf')
         extract_text_from_pdf_files(pdf_file_list, save_dir)

@@ -23,6 +23,30 @@ from tqdm import tqdm
 
 
 def manual_validation(sentence_list, max_character_length=500, num_cycles=3):
+    """
+    Manually identify sentence breaks present in a line and split the line into two
+    sentences in the sentence list.
+
+    Parameters
+    ----------
+    sentence_list : list
+        List of line strings from multiple documents.
+    max_character_length : int, optional
+        The maximum character length of a line in the sentence list before manual
+        verification is required given the likelihood of multiple sentences
+        included in the string. The default is 500.
+    num_cycles : int, optional
+        The number of times the user will iterate through the sentence list at
+        a decreasing max_character_length filter value to capture slightly shorter
+        strings still likely to contain multiple sentences.
+
+    Returns
+    -------
+    sentence_list : list
+        List of all lines from multiple documents with an extra blank line 
+        inserted between unique documents.
+
+    """
     long_sentence_index_bank = []
     cycle_count = 0
     starting_max_character_length = (max_character_length + num_cycles*20)
@@ -67,6 +91,22 @@ def manual_validation(sentence_list, max_character_length=500, num_cycles=3):
 
 
 def add_document_line_breaks(sentence_list):
+    """
+    Utility function for manual identification of document breaks requiring an 
+    extra blank line separator for processing by target language models.
+
+    Parameters
+    ----------
+    sentence_list : list
+        List of all lines from multiple documents.
+
+    Returns
+    -------
+    sentence_list : list
+        List of all lines from multiple documents with an extra blank line 
+        inserted between unique documents.
+
+    """
     sentence_count = len(sentence_list)
     i = 0
 #   split_doc = []

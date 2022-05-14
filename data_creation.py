@@ -6,10 +6,13 @@ Created on Wed Sep 15 22:10:05 2021
 """
 from pprint import pprint
 import os
-from tokenization import FullTokenizer, convert_to_unicode
+from tokenization import FullTokenizer, convert_to_unicode 
+# Tokenization.py can be sourced from the BERT GitHub repository available at https://github.com/google-research/bert/blob/master/tokenization.py
 import time
 import sys
-import tokenization
+import collections
+import tensorflow as tf
+import tensorflow.compat.v1 as tf
 
 
 def create_examples(text_list, label_list, set_type):

@@ -40,5 +40,3 @@ Model Performance by Evaluation Metric
 | BERT-Tiny   | 54.53%	|  52.16%  | 	52.89%    |    51.25%     |
 | BERT-Mini   | 66.08%	|  65.35%  |	65.71%    |    66.32%     |
 | BERT-Medium | 68.02%	|  67.72%  |	68.57%    |    67.78%     |
-
-## Future Work

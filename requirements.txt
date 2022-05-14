@@ -1,0 +1,8 @@
+tika==1.24
+pwinput==1.0.2
+python-dotenv==0.2.0
+tensorflow >= 1.11.0
+# CPU Version of TensorFlow
+# BERT code is not maintained for TF2.0. If running directly from the GitHub repository,
+# you will need to switch "import tensorflow as tf" to "import tensorflow.compat.v1 as tf",
+# especially since it is possible installing from this requirements.txt file may fail

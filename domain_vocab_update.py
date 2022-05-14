@@ -12,6 +12,17 @@ import os
 
 
 def get_vocab_and_corpus_paths():
+    """
+    Prompt the user for the string paths to the BERT vocab and full corpus file.
+
+    Returns
+    -------
+    BERT_vocab_file_loc : str
+        The string path to the BERT vocabulary words file.
+    total_corpus_txt_file_loc : str
+        The string path to the full training corpus .txt file.
+
+    """
     BERT_vocab_file_loc = input('Please enter the full filepath to the '
                                 'BERT pretrained model vocabulary: ')
     total_corpus_txt_file_loc = input('Please enter the full filepath to '
@@ -20,6 +31,25 @@ def get_vocab_and_corpus_paths():
 
 
 def read_vocab_files(BERT_vocab_file_loc, total_corpus_txt_file_loc):
+    """
+    Read the BERT vocab and corpus files into memory and return list of 
+    BERT vocab and lowercase corpus sentences.
+
+    Parameters
+    -------
+    BERT_vocab_file_loc : str
+        The string path to the BERT vocabulary words file.
+    total_corpus_txt_file_loc : str
+        The string path to the full training corpus .txt file.
+
+    Returns
+    -------
+    pretrained_vocab : list
+        List of all BERT pretrained vocabulary words.
+    sentences_list : list
+        List of all lowercase sentences in the training corpus.
+
+    """
     # confirmed all vocab files are same across models
     with open(BERT_vocab_file_loc, 'r', encoding='utf-8') as file:
         pretrained_vocab = file.readlines()
@@ -32,6 +62,21 @@ def read_vocab_files(BERT_vocab_file_loc, total_corpus_txt_file_loc):
 
 
 def create_token_dict_from_corpus(total_corpus_txt_file_loc):
+    """
+    Create a token count dictionary with an ordered list of tokens appearing
+    in the target corpus and the frequency of the tokens' appearances.
+
+    Parameters
+    -------
+    total_corpus_txt_file_loc : str
+        The string path to the full training corpus .txt file.
+
+    Returns
+    -------
+    token_count_dict : dict
+        Dictionary of corpus tokens and appearance frequency.
+
+    """
     stop_words = set(stopwords.words('english'))
     token_count = bvb_tokenizer.corpus_token_counts(total_corpus_txt_file_loc,
                                                     None)
@@ -55,6 +100,35 @@ def merge_domain_vocab(token_count_dict,
                        min_token_count=0,
                        max_token_count=None,
                        max_domain_vocab_additions=994):
+    """
+    Create a token count dictionary with an ordered list of tokens appearing
+    in the target corpus and the frequency of the tokens' appearances.
+
+    Parameters
+    -------
+    token_count_dict : dict
+        Dictionary of corpus tokens and appearance frequency.
+    pretrained_vocab : list
+        List of all BERT pretrained vocabulary words.
+    min_token_count : int, optional
+        Minimum number of times a token must appear in the corpus to be 
+        included in the combined list of pretrained vocabulary and domain-specific
+        vocabulary identified in the corpus. The default is 0.
+    max_token_count : int, optional
+        Maximum number of times a token may appear in the corpus before
+        exclusion from the combined list of pretrained vocabulary and domain-specific
+        vocabulary identified in the corpus. The default is None.
+    max_domain_vocab_additions : int, optional
+        The maximum number of new vocabulary permitted to be added to the combined 
+        vocabulary list sourced from the target corpus.
+
+    Returns
+    -------
+    pretrained_vocab : list
+        List of vocabulary from BERT pretraining and the target corpus to use for
+        further pretraining.
+
+    """
     if max_domain_vocab_additions > 994:
         raise ValueError('BERT models only have 994 available vocabulary slots'
                          ' for domain adaption.')
@@ -84,6 +158,16 @@ def merge_domain_vocab(token_count_dict,
 
 
 def main():
+    """
+    Add valuable words identified in the target corpus to the existing
+    BERT pretraining vocabulary list to continue pretraining on the
+    target corpus.
+
+    Returns
+    -------
+    None.
+
+    """
     (BERT_vocab_file_loc,
      total_corpus_txt_file_loc) = get_vocab_and_corpus_paths()
     pretrained_vocab = read_vocab_files(BERT_vocab_file_loc,
